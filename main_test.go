@@ -19,7 +19,7 @@ func TestHelloHandler(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.JSONEq(t, `{"text":"Hello GH Actions World!"}`, rr.Body.String())
+	assert.JSONEq(t, `{"text":"Hello GH Actions World      !"}`, rr.Body.String())
 }
 
 func TestGoodbyeHandler(t *testing.T) {
