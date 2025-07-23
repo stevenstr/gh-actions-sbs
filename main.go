@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 )
 
 type Message struct {
@@ -23,10 +24,19 @@ func GoodbyeHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(message)
 }
 
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		log.Printf("Method: %s, Path: %s, Duration: %v", r.Method, r.URL.Path, time.Since(start))
+	})
+}
+
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/hello", HelloHandler)
-	mux.HandleFunc("/goodbye", GoodbyeHandler)
+	mux.Handle("/hello", loggingMiddleware(http.HandlerFunc(HelloHandler)))
+
+	mux.Handle("/goodbye", loggingMiddleware(http.HandlerFunc(GoodbyeHandler)))
 
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		slog.Error(err.Error())
