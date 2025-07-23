@@ -35,3 +35,17 @@ func TestGoodbyeHandler(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.JSONEq(t, `{"text":"Goodbye GH Actions World!"}`, rr.Body.String())
 }
+
+func TestLoggingMiddleware(t *testing.T) {
+	req, err := http.NewRequest("GET", "/hello", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := loggingMiddleware(http.HandlerFunc(HelloHandler))
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.JSONEq(t, `{"text":"Hello GH Actions World!"}`, rr.Body.String())
+}
