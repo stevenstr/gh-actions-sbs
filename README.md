@@ -464,97 +464,126 @@ go get -u github.com/swaggo/gin-swagger
 go get -u github.com/swaggo/files
 ```
 
-
-# Шаг 2: Настройка Swagger
-Создайте файл docs/docs.go для настройки Swagger:
-```go
-// docs/docs.go
-package docs
-
-import (
-    "github.com/swaggo/gin-swagger"
-    "github.com/swaggo/files"
-    "github.com/gin-gonic/gin"
-)
-
-// @title Swagger Example API
-// @version 1.0
-// @description This is a sample server Petstore server.
-// @termsOfService http://swagger.io/terms/
-
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-
-// @host localhost:8080
-// @BasePath /api/v1
-
-// @securityDefinitions.basic BasicAuth
-
-// @externalDocs.description OpenAPI
-// @externalDocs.url http://swagger.io
-
-func SwaggerInit(router *gin.Engine) {
-    router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-}
+```sh
+export PATH=$PATH:$(go env GOPATH)/bin
 ```
 
-Обновите файл main.go для интеграции Swagger:
+
+# Шаг 2: Настройка Swagger
+
+Автодок-комментарии (auto-generated documentation comments) — это специальные комментарии в коде, которые расставляются вручную вами, но по заранее определённому шаблону (синтаксису), понятному инструменту генерации документации (в нашем случае — утилите swag).
+
+Как это работает:
+
+Вы пишете над функцией-хендлером (или над пакетом) «мета-комментарии», начинающиеся с // @….
+Утилита swag (команда swag init) сканирует ваш исходный код, собирает эти // @…-строки и превращает их в файл docs/swagger.json (или swagger.yaml) в формате OpenAPI/Swagger.
+Swagger UI (к которому вы подключаетеся через gin-swagger.WrapHandler) читает этот JSON/YAML и отображает документацию в браузере.
+Пример автодок-комментариев в коде (взятый из предыдущего ответа):
+
 ```go
 
+// @Summary      Hello World
+// @Description  Returns a hello message
+// @ID           helloHandler
+// @Produce      json
+// @Success      200  {object}  Message
+// @Router       /hello [get]
+func helloHandler(c *gin.Context) { … }
+```
+Расшифровка основных меток (@ tags):
+
+@Summary — краткое описание метода.
+@Description — подробное описание.
+@ID — уникальный идентификатор операции (используется внутри Swagger).
+@Accept / @Produce — форматы входящих/исходящих данных (json, xml и т. д.).
+@Param — описание параметров (query, body, path и пр.).
+@Success / @Failure — описание возможных ответов (код, тип, модель данных).
+@Router — путь и HTTP-метод в формате <path> [<method>].
+Плюс общие метки над пакетом/файлом: @title, @version, @host, @BasePath и пр.
+Откуда «высрать» шаблон автодок-комментариев?
+
+Официальная документация swaggo:
+https://github.com/swaggo/swag#declarative-comments-format
+Примеры в репозитории gin-swagger:
+https://github.com/swaggo/gin-swagger#usage
+В сорцах проектов, где уже используется swag: посмотрите, как оформлены // @… в популярных Go-репозиториях.
+Как начать:
+a) Ставите swag в PATH.
+b) В корне проекта запускаете swag init — он автоматически создаст /docs.
+c) Дописываете // @…-комментарии к вашим хендлерам (и к корню пакета, чтобы задать общие параметры API).
+d) Перезапускаете swag init, обновляете /docs/swagger.json.
+e) Открываете UI по /swagger/index.html.
+
+Таким образом «автодок-комментарии» — это просто ваша разметка исходников под генератор Swagger-документации.
+
+
+Опишем апи в main.go
+```go
+// main.go
 package main
 
 import (
-    "encoding/json"
-    "net/http"
-    "github.com/gin-gonic/gin"
-    "github.com/swaggo/gin-swagger"
-    "github.com/swaggo/files"
-    "go-rest-api/docs"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	_ "github.com/stevenstr/gh-actions-sbs/docs" // docs генерится swag-ом
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// Message — структура ответа
 type Message struct {
-    Text string `json:"text"`
+	Text string `json:"text"`
 }
 
-// @Summary Hello World
-// @Description do ping
-// @ID get-string-by-int
-// @Accept  json
-// @Produce  json
-// @Success 200 {object} Message
-// @Router /hello [get]
+// @title           Simple API
+// @version         1.0
+// @description     This is a sample server.
+// @termsOfService  http://example.com/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.example.com/support
+// @contact.email  support@example.com
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8080
+// @BasePath  /
+
+// @Summary      Hello World
+// @Description  Returns a hello message
+// @ID           helloHandler
+// @Produce      json
+// @Success      200  {object}  Message
+// @Router       /hello [get]
 func helloHandler(c *gin.Context) {
-    message := Message{Text: "Hello, World!"}
-    c.JSON(http.StatusOK, message)
+	c.JSON(http.StatusOK, Message{Text: "Hello, World!"})
 }
 
-// @Summary Goodbye World
-// @Description do ping
-// @ID get-string-by-int
-// @Accept  json
-// @Produce  json
-// @Success 200 {object} Message
-// @Router /goodbye [get]
+// @Summary      Goodbye World
+// @Description  Returns a goodbye message
+// @ID           goodbyeHandler
+// @Produce      json
+// @Success      200  {object}  Message
+// @Router       /goodbye [get]
 func goodbyeHandler(c *gin.Context) {
-    message := Message{Text: "Goodbye, World!"}
-    c.JSON(http.StatusOK, message)
+	c.JSON(http.StatusOK, Message{Text: "Goodbye, World!"})
 }
 
 func main() {
-    router := gin.Default()
+	r := gin.Default()
 
-    router.GET("/hello", helloHandler)
-    router.GET("/goodbye", goodbyeHandler)
+	r.GET("/hello", helloHandler)
+	r.GET("/goodbye", goodbyeHandler)
 
-    docs.SwaggerInit(router)
+	// Роут для Swagger UI
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-    router.Run(":8080")
+	r.Run(":8080")
 }
 ```
+
 
 ## Шаг 3: Генерация документации
 Сгенерируйте документацию Swagger:
@@ -572,6 +601,111 @@ go run main.go
 ```
 
 Откройте браузер и перейдите по адресу http://localhost:8080/swagger/index.html, чтобы увидеть документацию Swagger.
+
+
+
+# Шаг 5: Запуск и проверка
+Ниже разберём пример «старта» HTTP-сервера с возможностью плавного (graceful) завершения по шагам.
+
+```go
+import (
+    "context"
+    "log"
+    "net/http"
+    "os"
+    "os/signal"
+    "syscall"
+    "time"
+    "github.com/gin-gonic/gin"
+)
+```
+
+– Пакет net/http и github.com/gin-gonic/gin для запуска HTTP-сервера.
+– context, os/signal, syscall, time – для организации graceful-shutdown.
+– log – для логирования.
+
+```go
+func main() {
+  // 1. Инициализируем Gin с дефолтными middleware (Logger, Recovery)
+	router := gin.Default()
+
+   // 2. Регистрируем любые эндпоинты
+	router.GET("/hello", helloHandler)
+	router.GET("/goodbye", goodbyeHandler)
+
+	// Роут для Swagger UI
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+  // 3. Оборачиваем router в http.Server
+//   – Оборачиваем gin.Engine (реализующий http.Handler) в стандартный http.Server.
+// – Благодаря этому можем управлять запуском и завершением более тонко, чем вызывая просто r.Run().
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
+ 
+
+	// 4. Запускаем сервер в отдельной горутине
+//   – Запускаем ListenAndServe() в новой горутине, чтобы основная программа не блокировалась.
+// – Если ошибка не равна http.ErrServerClosed (это «нормальный» код закрытия), логируем и завершаем приложение через log.Fatalf.
+	go func() {
+		log.Printf("🚀 Starting server on %s", srv.Addr)
+		if err :=  srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("failed to start server: %v", err)
+		}
+	}()
+
+// 5. Ловим системные сигналы для graceful-shutdown
+	// Настраиваем ловлю сигнала прерывания (Ctrl+C / kill)
+//   – Создаём канал quit для системных сигналов.
+// – signal.Notify подписывается на SIGINT (Ctrl+C) и SIGTERM (kill).
+// – <-quit блокируется до получения одного из этих сигналов.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("🔌 Shutdown signal received, exiting...")
+
+// 6. Останавливаем сервер с таймаутом (пока не обрывать запросы)
+	// Даем серверу 5 секунд на «тихую» остановку
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("server forced to shutdown: %v", err)
+	}
+//   – Создаём контекст с таймаутом (5 секунд), чтобы не ждать бесконечно.
+// – srv.Shutdown(ctx) сообщит серверу:
+// • перестать принимать новые соединения;
+// • дать «живущим» запросам завершиться в течение времени таймаута;
+// • после чего принудительно закрыть остатки.
+// – Если в пределах 5 секунд все запросы не завершились — Shutdown вернёт ошибку, и мы логируем фатал.
+// – Если всё прошло успешно — пишем в лог об удачном завершении.
+
+	log.Println("🛑 Server stopped gracefully")
+}
+```
+
+Пояснения шагов:
+- gin.Default() — заводит стандартный HTTP-сервер с логированием и recover-middleware.
+- Роуты регистрируются привычным router.GET/....
+- Создаётся стандартный http.Server, в поле Handler передаётся наш Gin-router.
+srv.ListenAndServe() запускается в отдельной горутине, чтобы основной поток мог «сидеть» и ждать сигнала остановки.
+- Через os.Signal и signal.Notify ловим Ctrl+C (SIGINT) или kill (SIGTERM).
+- srv.Shutdown(ctx) — это встроенный метод Go-сервера, который: • перестаёт принимать новые подключения;
+• даёт текущим обработчикам (Gin-хендлерам) до 5 секунд на завершение;
+• затем принудительно закрывает оставшиеся.
+Так мы получаем «мягкую» остановку сервера, не «режем» на лету открытые HTTP-соединения.
+
+
+Зачем так делают?
+• Грейсфул-шадоун (graceful shutdown) нужен для того, чтобы при рестарте/обновлении/остановке сервера не обрывать «на лету» активные HTTP-сессии или транзакции.
+• Это критично в боевых системах, чтобы клиенты получали ответы, а не «обрыв соединения».
+• Использование http.Server + контекст + сигналов OS — стандартный паттерн в Go для управления жизненным циклом HTTP-сервисов.
+
+Что здесь улучшено:
+- Убираем избыточный os.Exit(1) после log.Fatal (он и так вызывает os.Exit(1)).
+- Пишем понятный log.Fatalf("…: %v", err) вместо errors.Error(err).
+- Используем стандартный http.Server для возможности graceful-shutdown.
+- Ловим сигналы SIGINT/SIGTERM и даём серверу 5 секунд на корректное завершение активных соединений.
 
 
 # Шаг 5: Обновление тестов

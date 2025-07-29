@@ -1,0 +1,46 @@
+basePath: /
+definitions:
+  main.Message:
+    properties:
+      text:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+    url: http://www.example.com/support
+  description: This is a sample server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://example.com/terms/
+  title: Simple API
+  version: "1.0"
+paths:
+  /goodbye:
+    get:
+      description: Returns a goodbye message
+      operationId: goodbyeHandler
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.Message'
+      summary: Goodbye World
+  /hello:
+    get:
+      description: Returns a hello message
+      operationId: helloHandler
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.Message'
+      summary: Hello World
+swagger: "2.0"
