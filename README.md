@@ -1663,7 +1663,7 @@ func main() {
 ## встраиваем health check в CI
 ```yaml
     - name: Run App in Docker Container
-      run: docker run -p 8080:8080 gh-actions-sbs
+      run: docker run -d -p 8080:8080 gh-actions-sbs
 
     - name: Health check (to 20s)
       run: |
