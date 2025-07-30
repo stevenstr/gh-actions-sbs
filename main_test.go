@@ -144,3 +144,18 @@ func TestSwaggerRouteAvailable(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
+
+func TestHealthRoute(t *testing.T) {
+	// смок тест
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	router.GET("/health", HealthCheckHandler)
+
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/health")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+}

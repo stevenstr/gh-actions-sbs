@@ -62,23 +62,23 @@ func checkDependencies() bool {
 	return true
 }
 
+func HealthCheckHandler(c *gin.Context) {
+	if !checkDependencies() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"status": "fail"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
 func main() {
 	// 1. Инициализируем Gin с дефолтными middleware (Logger, Recovery)
 	router := gin.Default()
 
 	// 2. Регистрируем любые эндпоинты
 	// Healthcheck endpoint
-	router.GET("/health", func(c *gin.Context) {
-		if !checkDependencies() {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "fail"})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	router.GET("/health", HealthCheckHandler)
 	router.GET("/hello", HelloHandler)
 	router.GET("/goodbye", GoodbyeHandler)
-
-	// Роут для Swagger UI
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// 3. Оборачиваем router в http.Server
@@ -97,7 +97,6 @@ func main() {
 
 	// Канал для внутреннего shutdown при падении healthcheck
 	internalShutdown := make(chan struct{})
-
 	// Мониторинг состояния
 	go func() {
 		for {
