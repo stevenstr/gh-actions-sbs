@@ -1523,7 +1523,7 @@ jobs:
       run: docker run --rm go-rest-api go test -v ./...
 
     - name: Run application in Docker container
-      run: docker run --rm -p 8080:8080 go-rest-api
+      run: timeout 15s docker run --rm -p 8080:8080 go-rest-api
 ```
 
 Шаг 3: Запуск и проверка локально
@@ -1541,6 +1541,124 @@ docker run --rm -p 8080:8080 go-rest-api
 Откройте браузер и перейдите по адресам http://localhost:8080/hello и http://localhost:8080/goodbye, чтобы убедиться, что API работает.
 
 Откройте браузер и перейдите по адресу http://localhost:8080/swagger/index.html, чтобы увидеть документацию Swagger.
+
+
+## graceful shutdown при падении healthcheck.
+
+По-сеньёрному — значит не просто «запустилось», а гарантированно работает, и если нет — джоба падает. Вот несколько подходов, которые используют опытные разработчики Go-проектов в GitHub Actions:
+
+🧰 4. Используй готовый GitHub Action
+Например: zethuman/healthcheck
+
+yaml
+- name: Container healthcheck
+  uses: zethuman/healthcheck@v0.0.1
+  with:
+    name: my-container
+    timeout: 180
+    interval: 2
+Проверяет статус контейнера и завершает джобу, если он unhealthy
+
+🧼 5. В Go-приложении — отдельный /health эндпоинт
+go
+http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+  w.WriteHeader(http.StatusOK)
+})
+Это стандарт для Kubernetes, Docker и CI/CD — не игнорируй
+
+
+ Если healthcheck падает — это сигнал, что приложение не в порядке, и его стоит корректно завершить. Вот как можно реализовать graceful shutdown в Gin при сбое healthcheck:
+
+🧠 Общая идея
+Периодически проверяем состояние (например, SQL, Redis, ENV).
+
+Если проверка не проходит — инициируем shutdown.
+
+Завершаем сервер через http.Server.Shutdown() с таймаутом.
+
+Пример:
+```go
+func checkDependencies() bool {
+	// проверкИ коннектов к бд редиске и тп
+
+	return true
+}
+```
+
+#### main c health check и graceful:
+```go
+func main() {
+	// 1. Инициализируем Gin с дефолтными middleware (Logger, Recovery)
+	router := gin.Default()
+
+	// 2. Регистрируем любые эндпоинты
+	// Healthcheck endpoint
+	router.GET("/health", func(c *gin.Context) {
+		if !checkDependencies() {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "fail"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+	router.GET("/hello", HelloHandler)
+	router.GET("/goodbye", GoodbyeHandler)
+
+	// Роут для Swagger UI
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// 3. Оборачиваем router в http.Server
+	srv := &http.Server{
+		Addr:    "0.0.0.0:8080",
+		Handler: router,
+	}
+
+	// 4. Запускаем сервер в отдельной горутине
+	go func() {
+		log.Printf("🚀 Starting server on %s", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("failed to start server: %v", err)
+		}
+	}()
+
+	// Канал для внутреннего shutdown при падении healthcheck
+	internalShutdown := make(chan struct{})
+
+	// Мониторинг состояния
+	go func() {
+		for {
+			time.Sleep(10 * time.Second)
+			if !checkDependencies() {
+				log.Println("Healthcheck failed — initiating shutdown")
+				internalShutdown <- struct{}{}
+				return
+			}
+		}
+	}()
+
+	// 5. Ловим системные сигналы для graceful-shutdown
+	// Настраиваем ловлю сигнала прерывания (Ctrl+C / kill)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	select {
+	case <-quit:
+		log.Println("Получен сигнал завершения")
+	case <-internalShutdown:
+		log.Println("Healthcheck упал — graceful shutdown")
+	}
+	log.Println("🔌 Shutdown signal received, exiting...")
+
+	// 6. Останавливаем сервер с таймаутом (пока не обрывать запросы)
+	// Даем серверу 5 секунд на «тихую» остановку
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server stopped gracefully")
+}
+```
+
 
 ## Переезд на multy-stage building
 

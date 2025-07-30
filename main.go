@@ -56,11 +56,25 @@ func GoodbyeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, Message{Text: "Goodbye, World!"})
 }
 
+func checkDependencies() bool {
+	// проверкИ коннектов к бд редиске и тп
+
+	return true
+}
+
 func main() {
 	// 1. Инициализируем Gin с дефолтными middleware (Logger, Recovery)
 	router := gin.Default()
 
 	// 2. Регистрируем любые эндпоинты
+	// Healthcheck endpoint
+	router.GET("/health", func(c *gin.Context) {
+		if !checkDependencies() {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "fail"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 	router.GET("/hello", HelloHandler)
 	router.GET("/goodbye", GoodbyeHandler)
 
@@ -81,11 +95,31 @@ func main() {
 		}
 	}()
 
+	// Канал для внутреннего shutdown при падении healthcheck
+	internalShutdown := make(chan struct{})
+
+	// Мониторинг состояния
+	go func() {
+		for {
+			time.Sleep(10 * time.Second)
+			if !checkDependencies() {
+				log.Println("Healthcheck failed — initiating shutdown")
+				internalShutdown <- struct{}{}
+				return
+			}
+		}
+	}()
+
 	// 5. Ловим системные сигналы для graceful-shutdown
 	// Настраиваем ловлю сигнала прерывания (Ctrl+C / kill)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	select {
+	case <-quit:
+		log.Println("Получен сигнал завершения")
+	case <-internalShutdown:
+		log.Println("Healthcheck упал — graceful shutdown")
+	}
 	log.Println("🔌 Shutdown signal received, exiting...")
 
 	// 6. Останавливаем сервер с таймаутом (пока не обрывать запросы)
@@ -96,5 +130,5 @@ func main() {
 		log.Fatalf("server forced to shutdown: %v", err)
 	}
 
-	log.Println("🛑 Server stopped gracefully")
+	log.Println("Server stopped gracefully")
 }
