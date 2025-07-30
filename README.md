@@ -1,3 +1,5 @@
+[![CI](https://github.com/stevenstr/gh-actions-sbs/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/stevenstr/gh-actions-sbs/actions/workflows/ci.yaml)
+
 # gh-actions-sbs
 
 # Go REST API Project
@@ -1688,7 +1690,13 @@ CI запускает приложение в фоне (&)
 
 Если checkDependencies() вернёт false, /health отдаст 503, и curl завершится с ошибкой → CI упадёт
 
+### Добавь статус Ci в ридми
 
+зауди в Actions
+выбери любой воркфлоу
+создай бейдж
+всё
+[![CI](https://github.com/stevenstr/gh-actions-sbs/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/stevenstr/gh-actions-sbs/actions/workflows/ci.yaml)
 
 ## Переезд на multy-stage building
 
