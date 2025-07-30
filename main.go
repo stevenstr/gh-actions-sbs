@@ -42,7 +42,7 @@ type Message struct {
 // @Produce      json
 // @Success      200  {object}  Message
 // @Router       /hello [get]
-func helloHandler(c *gin.Context) {
+func HelloHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, Message{Text: "Hello, World!"})
 }
 
@@ -52,7 +52,7 @@ func helloHandler(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  Message
 // @Router       /goodbye [get]
-func goodbyeHandler(c *gin.Context) {
+func GoodbyeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, Message{Text: "Goodbye, World!"})
 }
 
@@ -61,8 +61,8 @@ func main() {
 	router := gin.Default()
 
 	// 2. Регистрируем любые эндпоинты
-	router.GET("/hello", helloHandler)
-	router.GET("/goodbye", goodbyeHandler)
+	router.GET("/hello", HelloHandler)
+	router.GET("/goodbye", GoodbyeHandler)
 
 	// Роут для Swagger UI
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
