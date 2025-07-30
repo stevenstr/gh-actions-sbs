@@ -23,7 +23,9 @@ jobs:
     - run: go version 
 
     - name: Install Swagger
-      run: go get github.com/swaggo/swag/cmd/swag@v1.8.12 
+      run: |
+          go install github.com/swaggo/swag/cmd/swag@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
     - name: Tidy
       run: go mod tidy
