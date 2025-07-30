@@ -37,7 +37,7 @@ jobs:
       run: docker build -t gh-actions-sbs .
       
     - name: Run Tests in Docker
-      run: docker run --rm gh-actions-sbs go test -v ./...
+      run: timeout 15s docker run --rm gh-actions-sbs go test -v ./...
 
     - name: Run App in Docker Container
       run: docker run -p 8080:8080 gh-actions-sbs
