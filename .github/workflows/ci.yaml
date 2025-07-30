@@ -40,4 +40,17 @@ jobs:
       run: docker run --rm gh-actions-sbs go test -v ./...
 
     - name: Run App in Docker Container
-      run: timeout 15s docker run -p 8080:8080 gh-actions-sbs
+      run: docker run -p 8080:8080 gh-actions-sbs
+
+    - name: Health check (to 20s)
+      run: |
+        for i in {1..20}; do
+          if curl --fail http://localhost:8080/health; then
+            echo "health - ok."
+            exit 0
+          fi
+          echo "Loading..."
+          sleep 1
+        done
+        echo "health - bad."
+        exit 1

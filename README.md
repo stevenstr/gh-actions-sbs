@@ -1660,6 +1660,36 @@ func main() {
 ```
 
 
+## встраиваем health check в CI
+```yaml
+    - name: Run App in Docker Container
+      run: docker run -p 8080:8080 gh-actions-sbs
+
+    - name: Health check (to 20s)
+      run: |
+        for i in {1..20}; do
+          if curl --fail http://localhost:8080/health; then
+            echo "health - ok."
+            exit 0
+          fi
+          echo "Loading..."
+          sleep 1
+        done
+        echo "health - bad."
+        exit 1
+```
+
+🔍 Как это работает
+CI запускает приложение в фоне (&)
+
+Ждёт пару секунд (sleep 2)
+
+Делает curl на /health
+
+Если checkDependencies() вернёт false, /health отдаст 503, и curl завершится с ошибкой → CI упадёт
+
+
+
 ## Переезд на multy-stage building
 
 📦 Что такое multi-stage образ?
