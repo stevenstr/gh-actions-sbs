@@ -69,7 +69,7 @@ func main() {
 
 	// 3. Оборачиваем router в http.Server
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    "0.0.0.0:8080",
 		Handler: router,
 	}
 
