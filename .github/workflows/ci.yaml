@@ -24,7 +24,7 @@ jobs:
 
     - name: Install Swagger
       run: |
-          go install github.com/swaggo/swag/cmd/swag@latest
+          go install github.com/swaggo/swag/cmd/swag@v1.8.12
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
     - name: Swag version
