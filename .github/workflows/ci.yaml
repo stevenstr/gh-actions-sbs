@@ -23,7 +23,10 @@ jobs:
     - run: go version 
 
     - name: Install Swagger
-      run: go get -u github.com/swaggo/swag/cmd/swag
+      run: go install github.com/swaggo/swag/cmd/swag
+
+    - name: Swag version
+      run: swag --version
 
     - name: Generate Swagger docs
       run: swag init
