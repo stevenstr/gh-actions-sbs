@@ -1418,6 +1418,11 @@ docker run -p 3000:5000 gh-actions-sbs:latest
 
 8080 — порт внутри контейнера, на котором работает приложение
 
+Запуск тестов в контейнере:
+```sh
+docker run --rm gh-actions-sbs go test -v ./...
+```
+
 #### 😶 Если браузер «молчит» и не видит сайт из Docker-контейнера 
 — значит, где-то нарушена цепочка: приложение → контейнер → порт → хост → браузер. Давай разберёмся по шагам:
 
@@ -1499,10 +1504,14 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: '1.18'
+        go-version: '1.23'
 
     - name: Install Swag
-      run: go get -u github.com/swaggo/swag/cmd/swag
+      run: go install github.com/swaggo/swag/cmd/swag@v1.8.12
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+    - name: Swag version
+      run: swag --version
 
     - name: Generate Swagger docs
       run: swag init

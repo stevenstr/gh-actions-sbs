@@ -33,8 +33,11 @@ jobs:
     - name: Generate Swagger docs
       run: swag init
 
-    - name: Build
-      run: go build -v ./...
+    - name: Build Docker image
+      run: docker build -t gh-actions-sbs .
       
-    - name: Test
-      run: go test -v ./...
+    - name: Run Tests in Docker
+      run: docker run --rm gh-actions-sbs go test -v ./...
+
+    - name: Run App in Docker Container
+      run: docker run -p 8080:8080 gh-actions-sbs
