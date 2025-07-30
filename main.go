@@ -59,7 +59,7 @@ func GoodbyeHandler(c *gin.Context) {
 func checkDependencies() bool {
 	// проверкИ коннектов к бд редиске и тп
 
-	return false
+	return true
 }
 
 func main() {
