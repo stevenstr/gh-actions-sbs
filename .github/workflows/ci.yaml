@@ -27,9 +27,6 @@ jobs:
           go install github.com/swaggo/swag/cmd/swag@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-    - name: Tidy
-      run: go mod tidy
-
     - name: Swag version
       run: swag --version
 

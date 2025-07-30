@@ -1211,6 +1211,13 @@ gin.SetMode(gin.TestMode)
 
 
 ## Шаг 6: Обновление GitHub Actions
+
+Чтобы swag работал в GitHub Actions, его нужно установить вручную в рамках workflow. Вот как это делается:
+📌 Что происходит:
+
+- go install — скачивает и ставит swag CLI.
+- $GITHUB_PATH — добавляет путь к исполняемым файлам Go (~/go/bin) в PATH, чтобы следующая команда могла использовать swag.
+
 Обновите файл .github/workflows/ci.yml, чтобы включить генерацию документации Swagger:
 ```yaml
 
@@ -1235,10 +1242,15 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: '1.18'
+        go-version: '1.23'
 
-    - name: Install Swag
-      run: go get -u github.com/swaggo/swag/cmd/swag
+    - name: Install Swagger
+      run: |
+          go install github.com/swaggo/swag/cmd/swag@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+    - name: Swag version
+      run: swag --version
 
     - name: Generate Swagger docs
       run: swag init
